@@ -1,4 +1,4 @@
-package com.juliasoft.pdf.text
+package com.juliasoft.pdf.test
 
 import java.io.File
 import java.net.URL

@@ -65,8 +65,13 @@ object Server extends StrictLogging {
     def apply(req: HttpRequest) = {
       logger.info("got content: " + req.getContentString())
       logger.info("got params: " + req.getParamNames())
-      logger.info("got: " + req.getParam("data"))
+      logger.info("got data: " + req.getParam("data"))
       val paramParser: RequestReader[Seq[String]] = RequiredParam("data").as[Seq[String]]
+
+      val v = paramParser(req)
+      logger.info(s"param parser result: ${v}")
+      logger.info(s"param parser map: ${v.map(x => logger.info(s"Item: ${x}"))}")
+
       val pdfs = Await.result(paramParser(req))
       logger.info(s"pdfs: ${pdfs}")
       val tmp = mergeUrlFiles(pdfs)

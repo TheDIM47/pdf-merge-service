@@ -16,12 +16,12 @@ object Handlers {
       JsonUtils.toJson("error" -> "body_not_present")
     )
 
-    case NotParsed(ParamItem(p), _, _) => BadRequest(
-      JsonUtils.toJson("error" -> "param_not_parsed", "param" -> p)
+    case NotParsed(ParamItem(p), t, c) => BadRequest(
+      JsonUtils.toJson("error" -> "param_not_parsed", "param" -> p, "type" -> t, "cause" -> c)
     )
 
-    case NotParsed(BodyItem, _, _) => BadRequest(
-      JsonUtils.toJson("error" -> "body_not_parsed")
+    case NotParsed(BodyItem, t, c) => BadRequest(
+      JsonUtils.toJson("error" -> "body_not_parsed", "type" -> t, "cause" -> c)
     )
 
     case NotValid(ParamItem(p), rule) => BadRequest(

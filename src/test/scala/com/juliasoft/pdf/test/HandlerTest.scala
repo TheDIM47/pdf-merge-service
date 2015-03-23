@@ -1,13 +1,25 @@
-package com.juliasoft.pdf.text
+package com.juliasoft.pdf.test
 
 import com.juliasoft.service.pdf.Server
 import com.twitter.finagle.httpx.{Method, Request, Response, Status}
 import com.twitter.util.Future
+import com.typesafe.scalalogging.StrictLogging
 import org.scalatest.FunSpec
 
-class HandlerTest extends FunSpec {
+class HandlerTest extends FunSpec with StrictLogging {
 
   describe("Test service handlers") {
+    it("Should parse server sample list") {
+      val request = Request("data" -> Server.json)
+      val f = Server.Merge(request)
+      assert(f.isInstanceOf[Future[Response]])
+      f.map(x => {
+        logger.info(s"x=${x}")
+        assert(x.isInstanceOf[Response])
+        assert(x.status == Status.Ok)
+      })
+    }
+
     it("Should parse list") {
       val json = """["A","B"]"""
       val request = Request("data" -> json)
