@@ -9,7 +9,7 @@ object JsonUtils {
   mapper.registerModule(DefaultScalaModule)
   mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
-  def toJson(value: Map[Symbol, Any]): String = {
+  def toJson[A <: Symbol, B](value: Map[A, B]): String = {
     toJson(value map { case (k,v) => k.name -> v})
   }
 

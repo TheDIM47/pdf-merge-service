@@ -3,10 +3,10 @@ package com.juliasoft.pdf.test
 import java.io.File
 import java.net.URL
 
-import com.juliasoft.service.pdf.Server
 import org.apache.pdfbox.util.PDFMergerUtility
 import org.scalatest.FunSpec
 
+import scala.language.postfixOps
 import scala.sys.process._
 
 class PDFBoxTest extends FunSpec {

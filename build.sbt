@@ -4,7 +4,7 @@ name := """pdf-merge-service"""
 
 version := "1.0"
 
-scalaVersion := "2.11.4"
+scalaVersion := "2.11.5"
 
 resolvers += Resolver.bintrayRepo("dwhjames", "maven")
 
@@ -30,4 +30,10 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.1" % "test"
 )
 
+import de.johoop.findbugs4sbt.FindBugs._
+
+findbugsSettings
+
 testOptions in Test += Tests.Argument("-oD")
+
+scalacOptions ++= Seq("-deprecation", "-Xfatal-warnings", "-Xlint", "-feature")

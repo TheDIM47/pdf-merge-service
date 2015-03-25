@@ -24,7 +24,7 @@ object Server extends StrictLogging {
   case class SourceException(s: String) extends Exception(s)
 
   val handleDomainErrors: PartialFunction[Throwable, HttpResponse] = {
-    case SourceException(src) => BadRequest(JsonUtils.toJson("error" -> "source_error", "source" -> src))
+    case SourceException(src) => BadRequest(JsonUtils.toJson(Map("error" -> "source_error", "source" -> src)))
   }
 
   val handleExceptions = new SimpleFilter[HttpRequest, HttpResponse] {
@@ -94,7 +94,7 @@ object Server extends StrictLogging {
         }
         rep
       } else {
-        throw SourceException(JsonUtils.toJson("error" -> "no_files_to_process", "source" -> pdfs))
+        throw SourceException(JsonUtils.toJson(Map("error" -> "no_files_to_process", "source" -> pdfs)))
       }
       Future(rep)
     }
