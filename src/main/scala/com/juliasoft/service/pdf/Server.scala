@@ -13,13 +13,15 @@ import io.finch.jackson._
 import io.finch.request._
 import io.finch.response._
 import io.finch.route._
-import io.finch.{Endpoint => _, _}
+import io.finch.{Endpoint => _, HttpRequest, HttpResponse, _}
 import org.apache.pdfbox.util.PDFMergerUtility
 
 import scala.util.Properties
 
 object Server extends StrictLogging {
   implicit val objectMapper: ObjectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
+
+  val encodeHttp: EncodeResponse[String] = EncodeResponse("text/html")(s => s)
 
   case class SourceException(s: String) extends Exception(s)
 
@@ -34,19 +36,9 @@ object Server extends StrictLogging {
       })
   }
 
-  val filter = new SimpleFilter[HttpRequest, HttpResponse] {
-    def apply(request: HttpRequest, service: Service[HttpRequest, HttpResponse]) = {
-      if (request.path == "/") {
-        Index(request)
-      } else {
-        service(request)
-      }
-    }
-  }
+  val api: Endpoint[HttpRequest, HttpResponse] = (Get /> Index) | (Get / "merges" /> ShowHome) | (Post / "merges" /> Merge)
 
-  val api: Endpoint[HttpRequest, HttpResponse] = (Post / "merges" /> Merge) | (Get / "merges" /> ShowHome)
-
-  val backend: Service[HttpRequest, HttpResponse] = handleExceptions.andThen(filter).andThen(api)
+  val backend: Service[HttpRequest, HttpResponse] = handleExceptions ! api
 
   def main(args: Array[String]) {
     val port = Properties.envOrElse("PORT", "9000").toInt
@@ -66,13 +58,13 @@ object Server extends StrictLogging {
       logger.info("got content: " + req.getContentString())
       logger.info("got params: " + req.getParamNames())
       logger.info("got data: " + req.getParam("data"))
-      val paramParser: RequestReader[Seq[String]] = RequiredParam("data").as[Seq[String]]
+      val paramParser: RequestReader[Seq[String]] = param("data").as[Seq[String]]
 
       val v = paramParser(req)
       logger.info(s"param parser result: ${v}")
       logger.info(s"param parser map: ${v.map(x => logger.info(s"Item: ${x}"))}")
 
-      val pdfs = Await.result(paramParser(req))
+      val pdfs = Await.result(v)
       logger.info(s"pdfs: ${pdfs}")
       val tmp = mergeUrlFiles(pdfs)
       val rep = if (tmp.nonEmpty) {
@@ -94,14 +86,16 @@ object Server extends StrictLogging {
         }
         rep
       } else {
-        throw SourceException(JsonUtils.toJson(Map("error" -> "no_files_to_process", "source" -> pdfs)))
+        Ok("No files to process")
       }
       Future(rep)
     }
   }
 
+  case class NoFilesToProcess(pdfs : Seq[String]) extends Exception(JsonUtils.toJson(Map("error" -> "no_files_to_process", "source" -> pdfs)))
+
   object ShowHome extends Service[HttpRequest, HttpResponse] {
-    def apply(req: HttpRequest) = Future(Ok(homePage))
+    def apply(req: HttpRequest) = Future(Ok(homePage)(encodeHttp))
   }
 
   def mergeUrlFiles(files: Seq[String]): Option[File] = {
@@ -137,11 +131,11 @@ object Server extends StrictLogging {
                     |</p>
                     |<form action="/merges" method="post">
                     |<textarea name="data" rows="10" cols="100">${json}
-                    |</textarea>
-                    |<p>
-                    |<input type="submit" value="Submit" />
-                    |</p>
-                    |</form>
-                    |</body>
-                    |</html>""".stripMargin
+      |</textarea>
+      |<p>
+      |<input type="submit" value="Submit" />
+      |</p>
+      |</form>
+      |</body>
+      |</html>""".stripMargin
 }

@@ -6,7 +6,7 @@ import com.twitter.finagle.httpx.Request
 import com.twitter.io.Buf.Utf8
 import com.twitter.util.Await
 import io.finch.jackson._
-import io.finch.request.{RequestReader, RequiredBody}
+import io.finch.request.{RequestReader, body}
 import org.jboss.netty.handler.codec.http.HttpHeaders
 import org.scalatest.FunSpec
 
@@ -16,36 +16,36 @@ class JsonTest extends FunSpec {
   describe("Json teste") {
 
     it("Should decode to Seq[String]") {
-      val pdf: RequestReader[Seq[String]] = RequiredBody.as[Seq[String]]
+      val pdf: RequestReader[Seq[String]] = body.as[Seq[String]]
 
-      val body = Utf8("""[]""")
+      val bodyText = Utf8("""[]""")
       val req = Request()
-      req.content = body
-      req.headerMap.update(HttpHeaders.Names.CONTENT_LENGTH, body.length.toString)
+      req.content = bodyText
+      req.headerMap.update(HttpHeaders.Names.CONTENT_LENGTH, bodyText.length.toString)
 
       val expected: Seq[String] = Seq.empty
       assert(Await.result(pdf(req)) == expected)
     }
 
     it("Should decode to Seq[String] EXT") {
-      val pdf: RequestReader[Seq[String]] = RequiredBody.as[Seq[String]]
+      val pdf: RequestReader[Seq[String]] = body.as[Seq[String]]
 
-      val body = Utf8("[\"A\",\"B\",\"C\"]")
+      val bodyText = Utf8("[\"A\",\"B\",\"C\"]")
       val req = Request()
-      req.content = body
-      req.headerMap.update(HttpHeaders.Names.CONTENT_LENGTH, body.length.toString)
+      req.content = bodyText
+      req.headerMap.update(HttpHeaders.Names.CONTENT_LENGTH, bodyText.length.toString)
 
       val expected: Seq[String] = Seq("A", "B", "C")
       assert(Await.result(pdf(req)) == expected)
     }
 
     it("Should decode to Seq[String] no urls") {
-      val pdf: RequestReader[Seq[String]] = RequiredBody.as[Seq[String]]
+      val pdf: RequestReader[Seq[String]] = body.as[Seq[String]]
 
-      val body = Utf8("[]")
+      val bodyText = Utf8("[]")
       val req = Request()
-      req.content = body
-      req.headerMap.update(HttpHeaders.Names.CONTENT_LENGTH, body.length.toString)
+      req.content = bodyText
+      req.headerMap.update(HttpHeaders.Names.CONTENT_LENGTH, bodyText.length.toString)
 
       val expected: Seq[String] = Seq.empty
       assert(Await.result(pdf(req)) == expected)

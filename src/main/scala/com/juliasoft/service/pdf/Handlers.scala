@@ -1,10 +1,11 @@
 package com.juliasoft.service.pdf
 
 import io.finch.HttpResponse
-import io.finch.request.items.{BodyItem, ParamItem}
-import io.finch.request.{NotParsed, NotPresent, NotValid}
-import io.finch.response.{BadRequest, NotFound}
-import io.finch.route.RouteNotFound
+import io.finch.route._
+import io.finch.request._
+import io.finch.request.items.ParamItem
+import io.finch.response.{NotFound, BadRequest}
+
 
 object Handlers {
   val handleRequestReaderErrors: PartialFunction[Throwable, HttpResponse] = {
@@ -12,7 +13,7 @@ object Handlers {
       JsonUtils.toJson(Map("error" -> "param_not_present", "param" -> p))
     )
 
-    case NotPresent(BodyItem) => BadRequest(
+    case NotPresent(body) => BadRequest(
       JsonUtils.toJson(Map("error" -> "body_not_present"))
     )
 
@@ -20,7 +21,7 @@ object Handlers {
       JsonUtils.toJson(Map("error" -> "param_not_parsed", "param" -> p, "type" -> t, "cause" -> c))
     )
 
-    case NotParsed(BodyItem, t, c) => BadRequest(
+    case NotParsed(body, t, c) => BadRequest(
       JsonUtils.toJson(Map("error" -> "body_not_parsed", "type" -> t, "cause" -> c))
     )
 
