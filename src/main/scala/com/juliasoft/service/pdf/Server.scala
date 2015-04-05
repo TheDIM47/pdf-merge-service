@@ -68,24 +68,24 @@ object Server extends StrictLogging {
 
       val pdfs = Await.result(v)
       logger.info(s"pdfs: ${pdfs}")
-      val tmp = mergeUrlFiles(pdfs)
+      val tmp = Model.mergeUrlFiles(pdfs)
       val rep = if (tmp.nonEmpty) {
         val f = tmp.get
-        val rep = Response(Status.Ok)
-        val headers = Map("Content-Disposition" -> ("attachment; filename=\"" + f.getName + "\""),
-          "Content-Type" -> "application/pdf",
-          "Content-Length" -> f.length.toString
-        )
+        val rep = new ResponseBuilder(Status.Ok,
+          Map("Content-Disposition" -> ("attachment; filename=\"" + f.getName + "\""),
+            "Content-Type" -> "application/pdf",
+            "Content-Length" -> f.length.toString
+          )).apply()
         rep.withOutputStream { outputStream =>
           val arr = org.apache.commons.io.IOUtils.toByteArray(new FileInputStream(f))
           logger.info(s"File: ${f} Arr.length: ${arr.length}")
           outputStream.write(arr)
         }
-        rep.headerMap.clear()
-        headers.foreach(x => rep.headerMap.add(x._1, x._2))
-        if (f.exists) {
-          f.delete
-        }
+//        rep.headerMap.clear()
+//        headers.foreach(x => rep.headerMap.add(x._1, x._2))
+//        if (f.exists) {
+//          f.delete
+//        }
         rep
       } else {
         Ok("No files to process")
@@ -98,24 +98,4 @@ object Server extends StrictLogging {
     def apply(req: HttpRequest) = Future(Ok(Views.homePage)(encodeHttp))
   }
 
-  def mergeUrlFiles(files: Seq[String]): Option[File] = {
-    if (files == null || files.isEmpty) {
-      None
-    } else {
-      val m = new PDFMergerUtility()
-      files.par.foreach { x =>
-        try {
-          m.addSource(new URL(x).openStream())
-        } catch {
-          case e: Exception => println(e);
-        }
-      }
-      val t = File.createTempFile("tmp", ".pdf")
-      m.setDestinationFileName(t.getCanonicalPath)
-      m.mergeDocuments()
-      Some(t)
-    }
-  }
-
-  
 }

@@ -1,10 +1,9 @@
-name := """pdf-merge-service"""
-
-version := "1.0"
-
-scalaVersion := "2.11.6"
-
-lazy val root = project.enablePlugins(ScalaJSPlugin)
+lazy val root = (project in file(".")).
+  settings(
+    name := """pdf-merge-service""",
+    version := "1.0",
+    scalaVersion := "2.11.6"
+  )
 
 resolvers += Resolver.bintrayRepo("dwhjames", "maven")
 
@@ -39,7 +38,5 @@ scalacOptions ++= Seq("-deprecation", "-Xfatal-warnings", "-Xlint", "-feature")
 dependencyOverrides += "org.scala-lang" %% "scala-library" % "2.11.6"
 
 dependencyOverrides += "org.scala-js" % "scalajs-library_2.11" % "0.6.2"
-
-net.virtualvoid.sbt.graph.Plugin.graphSettings
 
 packageArchetype.java_application
