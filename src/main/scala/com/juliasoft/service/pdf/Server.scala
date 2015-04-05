@@ -24,9 +24,11 @@ object Server extends StrictLogging {
   val encodeHttp: EncodeResponse[String] = EncodeResponse("text/html")(s => s)
 
   case class SourceException(s: String) extends Exception(s)
+  case class NoFilesToProcess(s : String) extends Exception(s)
 
   val handleDomainErrors: PartialFunction[Throwable, HttpResponse] = {
     case SourceException(src) => BadRequest(JsonUtils.toJson(Map("error" -> "source_error", "source" -> src)))
+    case NoFilesToProcess(src) => BadRequest(JsonUtils.toJson(Map("error" -> "no_files_to_process", "source" -> src)))
   }
 
   val handleExceptions = new SimpleFilter[HttpRequest, HttpResponse] {
@@ -38,7 +40,7 @@ object Server extends StrictLogging {
 
   val api: Endpoint[HttpRequest, HttpResponse] = (Get /> Index) | (Get / "merges" /> ShowHome) | (Post / "merges" /> Merge)
 
-  val backend: Service[HttpRequest, HttpResponse] = handleExceptions ! api
+  val backend: Service[HttpRequest, HttpResponse] = handleExceptions andThen api
 
   def main(args: Array[String]) {
     val port = Properties.envOrElse("PORT", "9000").toInt
@@ -57,7 +59,7 @@ object Server extends StrictLogging {
     def apply(req: HttpRequest) = {
       logger.info("got content: " + req.getContentString())
       logger.info("got params: " + req.getParamNames())
-      logger.info("got data: " + req.getParam("data"))
+      logger.info("got data: " + param("data"))
       val paramParser: RequestReader[Seq[String]] = param("data").as[Seq[String]]
 
       val v = paramParser(req)
@@ -92,10 +94,8 @@ object Server extends StrictLogging {
     }
   }
 
-  case class NoFilesToProcess(pdfs : Seq[String]) extends Exception(JsonUtils.toJson(Map("error" -> "no_files_to_process", "source" -> pdfs)))
-
   object ShowHome extends Service[HttpRequest, HttpResponse] {
-    def apply(req: HttpRequest) = Future(Ok(homePage)(encodeHttp))
+    def apply(req: HttpRequest) = Future(Ok(Views.homePage)(encodeHttp))
   }
 
   def mergeUrlFiles(files: Seq[String]): Option[File] = {
@@ -117,25 +117,5 @@ object Server extends StrictLogging {
     }
   }
 
-  val json = """[
-               | "http://www.calendarpedia.com/download/2015-calendar-landscape-in-color.pdf",
-               | "http://www.calendarpedia.com/download/2015-calendar-landscape.pdf",
-               | "http://www.calendarpedia.com/download/2015-calendar-landscape-year-overview-in-color.pdf"
-               |]""".stripMargin
-  val homePage = s"""<html>
-                    |<title>PDF Merge service</title>
-                    |<body>
-                    |<p>
-                    |<h3>Hello from PDF merge application!</h3>
-                    |Enter your json to process
-                    |</p>
-                    |<form action="/merges" method="post">
-                    |<textarea name="data" rows="10" cols="100">${json}
-      |</textarea>
-      |<p>
-      |<input type="submit" value="Submit" />
-      |</p>
-      |</form>
-      |</body>
-      |</html>""".stripMargin
+  
 }

@@ -1,6 +1,7 @@
 project/target/
+root/
 target/
-samples/
 .idea/
+.idea_modules/
 *.class
 *.pdf

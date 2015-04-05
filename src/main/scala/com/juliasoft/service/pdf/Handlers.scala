@@ -6,7 +6,6 @@ import io.finch.request._
 import io.finch.request.items.ParamItem
 import io.finch.response.{NotFound, BadRequest}
 
-
 object Handlers {
   val handleRequestReaderErrors: PartialFunction[Throwable, HttpResponse] = {
     case NotPresent(ParamItem(p)) => BadRequest(
