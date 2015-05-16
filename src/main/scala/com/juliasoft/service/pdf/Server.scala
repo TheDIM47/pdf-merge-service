@@ -1,11 +1,10 @@
 package com.juliasoft.service.pdf
 
-import java.io.{File, FileInputStream}
-import java.net.URL
+import java.io.FileInputStream
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import com.twitter.finagle.httpx.{Response, Status}
+import com.twitter.finagle.httpx.Status
 import com.twitter.finagle.{Httpx, Service, SimpleFilter}
 import com.twitter.util.{Await, Future}
 import com.typesafe.scalalogging.StrictLogging
@@ -13,8 +12,7 @@ import io.finch.jackson._
 import io.finch.request._
 import io.finch.response._
 import io.finch.route._
-import io.finch.{Endpoint => _, HttpRequest, HttpResponse, _}
-import org.apache.pdfbox.util.PDFMergerUtility
+import io.finch.{Endpoint => _, HttpRequest, HttpResponse}
 
 import scala.util.Properties
 
@@ -24,7 +22,8 @@ object Server extends StrictLogging {
   val encodeHttp: EncodeResponse[String] = EncodeResponse("text/html")(s => s)
 
   case class SourceException(s: String) extends Exception(s)
-  case class NoFilesToProcess(s : String) extends Exception(s)
+
+  case class NoFilesToProcess(s: String) extends Exception(s)
 
   val handleDomainErrors: PartialFunction[Throwable, HttpResponse] = {
     case SourceException(src) => BadRequest(JsonUtils.toJson(Map("error" -> "source_error", "source" -> src)))
@@ -63,35 +62,28 @@ object Server extends StrictLogging {
       val paramParser: RequestReader[Seq[String]] = param("data").as[Seq[String]]
 
       val v = paramParser(req)
-      logger.info(s"param parser result: ${v}")
-      logger.info(s"param parser map: ${v.map(x => logger.info(s"Item: ${x}"))}")
+      logger.info(s"param parser result: [$v] map: [${v.map(x => logger.info(s"Item: $x"))}]")
 
-      val pdfs = Await.result(v)
-      logger.info(s"pdfs: ${pdfs}")
-      val tmp = Model.mergeUrlFiles(pdfs)
-      val rep = if (tmp.nonEmpty) {
-        val f = tmp.get
-        val rep = new ResponseBuilder(Status.Ok,
-          Map("Content-Disposition" -> ("attachment; filename=\"" + f.getName + "\""),
-            "Content-Type" -> "application/pdf",
-            "Content-Length" -> f.length.toString
-          )).apply()
-        rep.withOutputStream { outputStream =>
-          val arr = org.apache.commons.io.IOUtils.toByteArray(new FileInputStream(f))
-          logger.info(s"File: ${f} Arr.length: ${arr.length}")
-          outputStream.write(arr)
-        }
-//        rep.headerMap.clear()
-//        headers.foreach(x => rep.headerMap.add(x._1, x._2))
-//        if (f.exists) {
-//          f.delete
-//        }
-        rep
-      } else {
-        Ok("No files to process")
-      }
-      Future(rep)
-    }
+      v flatMap { pdfs =>
+        logger.info(s"pdfs: $pdfs")
+        Model.mergeUrlFiles(pdfs) match {
+          case Some(f) =>
+            val rep = new ResponseBuilder(Status.Ok,
+              Map("Content-Disposition" -> ("attachment; filename=\"" + f.getName + "\""),
+                "Content-Type" -> "application/pdf",
+                "Content-Length" -> f.length.toString
+              )).apply()
+            rep.withOutputStream { outputStream =>
+              val arr = org.apache.commons.io.IOUtils.toByteArray(new FileInputStream(f))
+              logger.info(s"File: ${f} Arr.length: ${arr.length}")
+              outputStream.write(arr)
+            }
+            Future(rep)
+          case None =>
+            Future(Ok("No files to process"))
+        } // model merge
+      } // v flatMap
+    } // apply
   }
 
   object ShowHome extends Service[HttpRequest, HttpResponse] {
